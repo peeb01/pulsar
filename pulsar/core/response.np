@@ -1,0 +1,210 @@
+import "pulsar/utils/parser.np"
+import regex
+
+fn pulsar_init() -> dict:
+    dict p = {}
+
+    # Set HTTP Methods
+    dict_set_string(p, "MethodGet", "GET")
+    dict_set_string(p, "MethodPost", "POST")
+    dict_set_string(p, "MethodPut", "PUT")
+    dict_set_string(p, "MethodPatch", "PATCH")
+    dict_set_string(p, "MethodDelete", "DELETE")
+    dict_set_string(p, "MethodOptions", "OPTIONS")
+    dict_set_string(p, "MethodHead", "HEAD")
+
+    # Set HTTP Status Codes
+    dict_set_int(p, "StatusContinue", 100)
+    dict_set_int(p, "StatusSwitchingProtocols", 101)
+    dict_set_int(p, "StatusProcessing", 102)
+    dict_set_int(p, "StatusEarlyHints", 103)
+
+    dict_set_int(p, "StatusOK", 200)
+    dict_set_int(p, "StatusCreated", 201)
+    dict_set_int(p, "StatusCreate", 201)
+    dict_set_int(p, "StatusAccepted", 202)
+    dict_set_int(p, "StatusNonAuthoritativeInfo", 203)
+    dict_set_int(p, "StatusNoContent", 204)
+    dict_set_int(p, "StatusResetContent", 205)
+    dict_set_int(p, "StatusPartialContent", 206)
+    dict_set_int(p, "StatusMultiStatus", 207)
+    dict_set_int(p, "StatusAlreadyReported", 208)
+    dict_set_int(p, "StatusIMUsed", 226)
+
+    dict_set_int(p, "StatusMultipleChoices", 300)
+    dict_set_int(p, "StatusMovedPermanently", 301)
+    dict_set_int(p, "StatusFound", 302)
+    dict_set_int(p, "StatusSeeOther", 303)
+    dict_set_int(p, "StatusNotModified", 304)
+    dict_set_int(p, "StatusUseProxy", 305)
+    dict_set_int(p, "StatusTemporaryRedirect", 307)
+    dict_set_int(p, "StatusPermanentRedirect", 308)
+
+    dict_set_int(p, "StatusBadRequest", 400)
+    dict_set_int(p, "StatusUnauthorized", 401)
+    dict_set_int(p, "StatusPaymentRequired", 402)
+    dict_set_int(p, "StatusForbidden", 403)
+    dict_set_int(p, "StatusNotFound", 404)
+    dict_set_int(p, "StatusMethodNotAllowed", 405)
+    dict_set_int(p, "StatusNotAcceptable", 406)
+    dict_set_int(p, "StatusProxyAuthRequired", 407)
+    dict_set_int(p, "StatusRequestTimeout", 408)
+    dict_set_int(p, "StatusConflict", 409)
+    dict_set_int(p, "StatusGone", 410)
+    dict_set_int(p, "StatusLengthRequired", 411)
+    dict_set_int(p, "StatusPreconditionFailed", 412)
+    dict_set_int(p, "StatusContentTooLarge", 413)
+    dict_set_int(p, "StatusURITooLong", 414)
+    dict_set_int(p, "StatusUnsupportedMediaType", 415)
+    dict_set_int(p, "StatusRangeNotSatisfiable", 416)
+    dict_set_int(p, "StatusExpectationFailed", 417)
+    dict_set_int(p, "StatusTeapot", 418)
+    dict_set_int(p, "StatusMisdirectedRequest", 421)
+    dict_set_int(p, "StatusUnprocessableEntity", 422)
+    dict_set_int(p, "StatusLocked", 423)
+    dict_set_int(p, "StatusFailedDependency", 424)
+    dict_set_int(p, "StatusTooEarly", 425)
+    dict_set_int(p, "StatusUpgradeRequired", 426)
+    dict_set_int(p, "StatusPreconditionRequired", 428)
+    dict_set_int(p, "StatusTooManyRequests", 429)
+    dict_set_int(p, "StatusRequestHeaderFieldsTooLarge", 431)
+    dict_set_int(p, "StatusUnavailableForLegalReasons", 451)
+
+    dict_set_int(p, "StatusInternalServerError", 500)
+    dict_set_int(p, "StatusNotImplemented", 501)
+    dict_set_int(p, "StatusBadGateway", 502)
+    dict_set_int(p, "StatusServiceUnavailable", 503)
+    dict_set_int(p, "StatusGatewayTimeout", 504)
+    dict_set_int(p, "StatusHTTPVersionNotSupported", 505)
+    dict_set_int(p, "StatusVariantAlsoNegotiates", 506)
+    dict_set_int(p, "StatusInsufficientStorage", 507)
+    dict_set_int(p, "StatusLoopDetected", 508)
+    dict_set_int(p, "StatusNotExtended", 510)
+    dict_set_int(p, "StatusNetworkAuthenticationRequired", 511)
+    return p
+
+dict pulsar = pulsar_init()
+
+fn pulsar_status_text(int code) -> string:
+    if code == 100:
+        return "Continue"
+    elif code == 101:
+        return "Switching Protocols"
+    elif code == 102:
+        return "Processing"
+    elif code == 200:
+        return "OK"
+    elif code == 201:
+        return "Created"
+    elif code == 202:
+        return "Accepted"
+    elif code == 204:
+        return "No Content"
+    elif code == 301:
+        return "Moved Permanently"
+    elif code == 302:
+        return "Found"
+    elif code == 304:
+        return "Not Modified"
+    elif code == 307:
+        return "Temporary Redirect"
+    elif code == 308:
+        return "Permanent Redirect"
+    elif code == 400:
+        return "Bad Request"
+    elif code == 401:
+        return "Unauthorized"
+    elif code == 403:
+        return "Forbidden"
+    elif code == 404:
+        return "Not Found"
+    elif code == 405:
+        return "Method Not Allowed"
+    elif code == 409:
+        return "Conflict"
+    elif code == 418:
+        return "I'm a teapot"
+    elif code == 429:
+        return "Too Many Requests"
+    elif code == 500:
+        return "Internal Server Error"
+    elif code == 501:
+        return "Not Implemented"
+    elif code == 502:
+        return "Bad Gateway"
+    elif code == 503:
+        return "Service Unavailable"
+    elif code == 504:
+        return "Gateway Timeout"
+    else:
+        return "Unknown Status"
+
+fn pulsar_response(int status_code, string status_text, array headers, string body) -> dict:
+    dict resp = {}
+    dict_set_int(resp, "status_code", status_code)
+    dict_set_string(resp, "status_text", status_text)
+    dict_set_array(resp, "headers", headers)
+    dict_set_string(resp, "body", body)
+    return resp
+
+fn pulsar_ok(string body) -> dict:
+    array h = ["Content-Type: text/plain", "Server: Pulsar"]
+    return pulsar_response(200, "OK", h, body)
+
+fn pulsar_json(dict data) -> dict:
+    array h = ["Content-Type: application/json", "Server: Pulsar"]
+    string body = json_stringify(data)
+    return pulsar_response(200, "OK", h, body)
+
+fn pulsar_redirect(string url) -> dict:
+    array h = ["Location: " + url, "Server: Pulsar"]
+    return pulsar_response(302, "Found", h, "")
+
+fn pulsar_not_found(string body) -> dict:
+    array h = ["Content-Type: text/plain", "Server: Pulsar"]
+    return pulsar_response(404, "Not Found", h, body)
+
+fn pulsar_error(string body) -> dict:
+    array h = ["Content-Type: text/plain", "Server: Pulsar"]
+    return pulsar_response(500, "Internal Server Error", h, body)
+
+fn pulsar_status_response(int status_code, string body) -> dict:
+    array h = ["Content-Type: text/plain", "Server: Pulsar"]
+    return pulsar_response(status_code, pulsar_status_text(status_code), h, body)
+
+fn pulsar_status_json(int status_code, dict data) -> dict:
+    array h = ["Content-Type: application/json", "Server: Pulsar"]
+    string body = json_stringify(data)
+    return pulsar_response(status_code, pulsar_status_text(status_code), h, body)
+
+fn format_response(dict resp) -> string:
+    int status_code = dict_get_int(resp, "status_code")
+    string status_text = dict_get_string(resp, "status_text")
+    
+    # Literal newline character (ASCII 10)
+    string nl = "
+"
+
+    # Build status line
+    string res = "HTTP/1.1 " + string(status_code) + " " + status_text + nl
+    
+    # Format and append all headers
+    array h = dict_get_array(resp, "headers")
+    int headers_len = np_rt_var_len(h)
+    
+    bool has_content_length = false
+    for i in range(0, headers_len):
+        string header_line = h[i]
+        res = res + header_line + nl
+        bool is_cl = regex_match("(?i)^Content-Length[\s\S]*", header_line)
+        if is_cl:
+            has_content_length = true
+
+    string body = dict_get_string(resp, "body")
+    # Automatically add Content-Length if not provided
+    if not has_content_length:
+        res = res + "Content-Length: " + string(np_rt_string_len(body)) + nl
+
+    # End headers and append body
+    res = res + nl + body
+    return res

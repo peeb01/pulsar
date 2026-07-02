@@ -1,0 +1,84 @@
+import regex
+
+fn pulsar_trim(string s) -> string:
+    # Trim leading and trailing whitespace using regex
+    string res = regex_replace("^[ \t\r\n]+", "", s)
+    res = regex_replace("[ \t\r\n]+$", "", res)
+    return res
+
+fn pulsar_split_header(string line) -> array:
+    # Extract header key and value
+    string key = regex_replace(":[\s\S]*$", "", line)
+    string val = regex_replace("^[^:]*:", "", line)
+    key = pulsar_trim(key)
+    val = pulsar_trim(val)
+    return [key, val]
+
+# --- SAFE DICTIONARY HELPERS ---
+
+fn dict_set_string(dict d, string key, string val):
+    np_rt_var_set_key(d, np_rt_string_c_str(key), np_rt_var_create_string(val))
+
+fn dict_set_dict(dict d, string key, dict val):
+    np_rt_var_set_key(d, np_rt_string_c_str(key), val)
+
+fn dict_set_array(dict d, string key, array val):
+    np_rt_var_set_key(d, np_rt_string_c_str(key), val)
+
+fn dict_set_int(dict d, string key, int val):
+    np_rt_var_set_key(d, np_rt_string_c_str(key), np_rt_var_create_int(val))
+
+fn dict_get_string(dict d, string key) -> string:
+    array val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
+    return np_rt_to_string_var(val_ptr)
+
+fn dict_get_dict(dict d, string key) -> dict:
+    dict val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
+    return val_ptr
+
+fn dict_get_array(dict d, string key) -> array:
+    array val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
+    return val_ptr
+
+fn dict_get_int(dict d, string key) -> int:
+    array val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
+    return np_rt_to_int_var(val_ptr)
+
+# -------------------------------
+
+fn parse_query(string query_str) -> dict:
+    dict q = {}
+    if np_rt_string_len(query_str) == 0:
+        return q
+
+    string remaining = query_str
+    # Remove leading '?' if present
+    bool has_question = regex_match("^\?[\s\S]*", remaining)
+    if has_question:
+        remaining = regex_replace("^\?", "", remaining)
+
+    while np_rt_string_len(remaining) > 0:
+        bool has_amp = regex_match("[\s\S]*&[\s\S]*", remaining)
+        string pair = ""
+        if has_amp:
+            pair = regex_replace("&[\s\S]*$", "", remaining)
+            remaining = regex_replace("^[^&]*&", "", remaining)
+        else:
+            pair = remaining
+            remaining = ""
+
+        # Parse key and value from pair (e.g. key=value)
+        bool has_equals = regex_match("[\s\S]*=[\s\S]*", pair)
+        if has_equals:
+            string k = regex_replace("=.*$", "", pair)
+            string v = regex_replace("^[^=]*=", "", pair)
+            k = pulsar_trim(k)
+            v = pulsar_trim(v)
+            if np_rt_string_len(k) > 0:
+                dict_set_string(q, k, v)
+        else:
+            # Key with no value
+            string k = pulsar_trim(pair)
+            if np_rt_string_len(k) > 0:
+                dict_set_string(q, k, "")
+    return q

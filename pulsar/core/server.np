@@ -1,0 +1,45 @@
+import "pulsar/core/request.np"
+import "pulsar/core/response.np"
+
+fn pulsar_serve(int port):
+    int server_fd = net_listen(port)
+    if server_fd < 0:
+        throw "Failed to listen on port"
+
+    string banner = "
+██████╗ ██╗   ██╗██╗     ███████╗ █████╗ ██████╗ 
+██╔══██╗██║   ██║██║     ██╔════╝██╔══██╗██╔══██╗
+██████╔╝██║   ██║██║     ███████╗███████║██████╔╝
+██╔═══╝ ██║   ██║██║     ╚════██║██╔══██║██╔══██╗
+██║     ╚██████╔╝███████╗███████║██║  ██║██║  ██║
+╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝
+"
+    print(banner)
+    print("Pulsar Server is running on port " + string(port) + "...")
+
+    while true:
+        int client_fd = net_accept(server_fd)
+        if client_fd >= 0:
+            # Read incoming request bytes
+            string raw_req = net_recv(client_fd, 8192)
+            int req_len = np_rt_string_len(raw_req)
+            print("Received request length: " + string(req_len))
+            
+            if req_len > 0:
+                # Parse request as a dictionary
+                dict req = parse_request(raw_req)
+                
+                # Route request through user-defined routing function (which returns a response dict)
+                dict resp = pulsar_route(req)
+                
+                # Format and send response
+                string raw_resp = format_response(resp)
+                int resp_len = np_rt_string_len(raw_resp)
+                print("Formatted response length: " + string(resp_len))
+                
+                int bytes_sent = net_send(client_fd, raw_resp)
+                print("Bytes sent: " + string(bytes_sent))
+            
+            # Clean up connection
+            net_close(client_fd)
+            print("Connection closed")

@@ -1,0 +1,49 @@
+import "pulsar/core/response.np"
+import "pulsar/core/request.np"
+
+fn pulsar_route(dict req) -> dict:
+    dict pulsar = pulsar_init()
+    
+    # Cast constants to local typed variables
+    string method_get = string(pulsar.MethodGet)
+    string method_post = string(pulsar.MethodPost)
+    string method_put = string(pulsar.MethodPut)
+    string method_delete = string(pulsar.MethodDelete)
+    
+    int status_ok = int(pulsar.StatusOK)
+    int status_created = int(pulsar.StatusCreated)
+    int status_not_found = int(pulsar.StatusNotFound)
+    
+    string path = dict_get_string(req, "path")
+    string method = dict_get_string(req, "method")
+    
+    if method == method_get and path == "/":
+        return pulsar_ok("Welcome to Pulsar HTTP Framework! Written entirely in NP.")
+    elif method == method_get and path == "/json":
+        dict response_data = {}
+        dict_set_string(response_data, "status", "success")
+        dict_set_string(response_data, "framework", "Pulsar")
+        dict_set_string(response_data, "language", "NP")
+        dict_set_string(response_data, "message", "Hello from modular framework!")
+        return pulsar_json(response_data)
+    elif method == method_post and path == "/submit":
+        string body = dict_get_string(req, "body")
+        return pulsar_status_response(status_created, "Submitted successfully: " + body)
+    elif method == method_put and path == "/update":
+        string body = dict_get_string(req, "body")
+        return pulsar_status_response(status_ok, "Updated successfully: " + body)
+    elif method == method_delete and path == "/delete":
+        return pulsar_status_response(status_ok, "Deleted successfully")
+    elif method == method_get and path == "/greet":
+        dict q = dict_get_dict(req, "query")
+        string name = "guest"
+        string name_param = dict_get_string(q, "name")
+        if np_rt_string_len(name_param) > 0:
+            name = name_param
+        return pulsar_ok("Hello, " + name + "!")
+    else:
+        return pulsar_status_response(status_not_found, "Page Not Found")
+
+import "pulsar/core/server.np"
+
+pulsar_serve(8080)

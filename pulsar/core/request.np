@@ -1,0 +1,65 @@
+import "pulsar/utils/parser.np"
+import regex
+
+fn parse_request(string raw_req) -> dict:
+    string remaining = raw_req
+    # Extract first line (request line)
+    string first_line = regex_replace("\r?\n[\s\S]*$", "", remaining)
+    remaining = regex_replace("^[^\n]*\n", "", remaining)
+
+    # Extract Method (e.g. GET)
+    string method = regex_replace(" +[\s\S]*$", "", first_line)
+    
+    # Extract Path and Query part (e.g. /path?key=val)
+    string path_and_proto = regex_replace("^[A-Z]+ +", "", first_line)
+    string path_and_query = regex_replace(" +HTTP/[0-9.]+\r?$", "", path_and_proto)
+
+    # Separate path and query parameter string
+    string path = ""
+    string query_str = ""
+    bool has_query = regex_match("[\s\S]*\?[\s\S]*", path_and_query)
+    if has_query:
+        path = regex_replace("\?[\s\S]*$", "", path_and_query)
+        query_str = regex_replace("^[^\?]*\?", "", path_and_query)
+    else:
+        path = path_and_query
+
+    dict query = parse_query(query_str)
+
+    # Parse headers
+    dict headers = {}
+    array header_names = []
+    string body = ""
+    
+    while np_rt_string_len(remaining) > 0:
+        bool has_nl = regex_match("[\s\S]*\n[\s\S]*", remaining)
+        string line = ""
+        if has_nl:
+            line = regex_replace("\r?\n[\s\S]*$", "", remaining)
+            remaining = regex_replace("^[^\n]*\n", "", remaining)
+        else:
+            line = remaining
+            remaining = ""
+
+        line = pulsar_trim(line)
+        if np_rt_string_len(line) == 0:
+            # Empty line indicates end of headers and start of body
+            body = remaining
+            remaining = ""
+        else:
+            array pair = pulsar_split_header(line)
+            string k = pair[0]
+            string v = pair[1]
+            if np_rt_string_len(k) > 0:
+                dict_set_string(headers, k, v)
+                np_rt_var_append(header_names, np_rt_var_create_string(k))
+
+    dict req = {}
+    dict_set_string(req, "method", method)
+    dict_set_string(req, "path", path)
+    dict_set_dict(req, "query", query)
+    dict_set_dict(req, "headers", headers)
+    dict_set_array(req, "header_names", header_names)
+    dict_set_string(req, "body", body)
+    
+    return req

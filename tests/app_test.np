@@ -1,0 +1,114 @@
+import "pulsar/core/response.np"
+import "pulsar/core/request.np"
+
+print("=== Running Pulsar Framework Tests ===")
+
+# Test 1: Trim helper
+string test_str = "   hello   "
+string trimmed = pulsar_trim(test_str)
+print("Trimmed string: '" + trimmed + "'")
+bool trim_ok = (trimmed == "hello")
+if trim_ok:
+    print("Trim test: true")
+else:
+    print("Trim test: false")
+
+# Test 2: Split header helper
+string header_line = "Content-Type: text/html"
+array header_pair = pulsar_split_header(header_line)
+string key = header_pair[0]
+string val = header_pair[1]
+print("Header key: '" + key + "', val: '" + val + "'")
+bool header_ok = (key == "Content-Type") and (val == "text/html")
+if header_ok:
+    print("Header split test: true")
+else:
+    print("Header split test: false")
+
+# Test 3: Parse query params
+dict query = parse_query("?name=Alice&age=25&admin")
+string q_name = dict_get_string(query, "name")
+string q_age = dict_get_string(query, "age")
+string q_admin = dict_get_string(query, "admin")
+print("Query name: '" + q_name + "', age: '" + q_age + "', admin: '" + q_admin + "'")
+
+bool query_ok = (q_name == "Alice") and (q_age == "25") and (q_admin == "")
+if query_ok:
+    print("Query parser test: true")
+else:
+    print("Query parser test: false")
+
+# Test 4: Parse raw HTTP request (using multi-line string for real newlines)
+string raw_request = "POST /submit?ref=web HTTP/1.1
+Host: localhost:8080
+Content-Length: 11
+
+Hello World"
+
+dict req = parse_request(raw_request)
+string req_method = dict_get_string(req, "method")
+string req_path = dict_get_string(req, "path")
+dict q = dict_get_dict(req, "query")
+string q_ref = dict_get_string(q, "ref")
+dict h = dict_get_dict(req, "headers")
+string h_host = dict_get_string(h, "Host")
+string req_body = dict_get_string(req, "body")
+
+print("Parsed Method: " + req_method)
+print("Parsed Path: " + req_path)
+print("Parsed Query ref: " + q_ref)
+print("Parsed Header Host: " + h_host)
+print("Parsed Body: " + req_body)
+
+bool req_ok = (req_method == "POST") and (req_path == "/submit") and (q_ref == "web") and (h_host == "localhost:8080") and (req_body == "Hello World")
+if req_ok:
+    print("Request parser test: true")
+else:
+    print("Request parser test: false")
+
+# Test 5: Format response
+dict mock_data = {}
+dict_set_string(mock_data, "status", "ok")
+dict resp = pulsar_json(mock_data)
+string raw_resp = format_response(resp)
+print("Formatted response:")
+print(raw_resp)
+
+bool resp_ok = regex_match("[\s\S]*Content-Type: application/json[\s\S]*", raw_resp) and regex_match("[\s\S]*Content-Length: 15[\s\S]*", raw_resp)
+if resp_ok:
+    print("Response formatting test: true")
+else:
+    print("Response formatting test: false")
+
+# Test 6: HTTP Status and Helper function test
+dict p = pulsar_init()
+int status_ok_code = int(p.StatusOK)
+int status_created_code = int(p.StatusCreated)
+string method_get_str = string(p.MethodGet)
+
+print("StatusOK code: " + string(status_ok_code))
+print("StatusCreated code: " + string(status_created_code))
+print("MethodGet string: " + method_get_str)
+
+bool constants_ok = (status_ok_code == 200) and (status_created_code == 201) and (method_get_str == "GET")
+if constants_ok:
+    print("Constants test: true")
+else:
+    print("Constants test: false")
+
+dict custom_resp = pulsar_status_response(status_created_code, "Created Resources")
+int resp_status = dict_get_int(custom_resp, "status_code")
+string resp_text = dict_get_string(custom_resp, "status_text")
+string resp_body = dict_get_string(custom_resp, "body")
+
+print("Custom Response - Code: " + string(resp_status) + ", Text: " + resp_text + ", Body: " + resp_body)
+bool helper_ok = (resp_status == 201) and (resp_text == "Created") and (resp_body == "Created Resources")
+if helper_ok:
+    print("Status helper test: true")
+else:
+    print("Status helper test: false")
+
+if trim_ok and header_ok and query_ok and req_ok and resp_ok and constants_ok and helper_ok:
+    print("ALL TESTS PASSED SUCCESSFULLY!")
+else:
+    print("SOME TESTS FAILED!")
