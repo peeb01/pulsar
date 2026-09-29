@@ -46,8 +46,6 @@ func pulsar_route(dict req) -> dict:
     else:
         return pulsar_status_response(status_not_found, "Page Not Found")
 
-import "pulsar/server"
-
 # Start server with default time format (MM:SS:MS)
 # Or use pulsar_serve_with_format(8080, "DD:MM:SS:MS:MicroSec")
 pulsar_serve(8080)
