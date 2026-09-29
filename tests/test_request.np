@@ -1,0 +1,100 @@
+import "pulsar/core/request.np"
+
+print("--- [TDD Suite: Request & Parser Module] ---")
+
+int passed = 0
+int total = 0
+
+# Test 1: pulsar_trim
+total = total + 1
+string t1 = pulsar_trim("   padded string \r\n  ")
+if t1 == "padded string":
+    passed = passed + 1
+    print("PASS: pulsar_trim")
+else:
+    print("FAIL: pulsar_trim ('" + t1 + "')")
+
+# Test 2: pulsar_split_header
+total = total + 1
+array pair = pulsar_split_header("Authorization: Bearer token123")
+string hk = pair[0]
+string hv = pair[1]
+if hk == "Authorization" and hv == "Bearer token123":
+    passed = passed + 1
+    print("PASS: pulsar_split_header")
+else:
+    print("FAIL: pulsar_split_header")
+
+# Test 3: parse_query - empty query
+total = total + 1
+dict q_empty = parse_query("")
+string missing_val = dict_get_string(q_empty, "key")
+if missing_val == "" or missing_val == "null" or np_rt_var_len(dict_get_array(q_empty, "keys")) == 0:
+    passed = passed + 1
+    print("PASS: parse_query (empty)")
+else:
+    print("FAIL: parse_query (empty) - got: '" + missing_val + "'")
+
+# Test 4: parse_query - multiple keys with query string
+total = total + 1
+dict q_multi = parse_query("?user=alice&role=admin&limit=20")
+string quser = dict_get_string(q_multi, "user")
+string qrole = dict_get_string(q_multi, "role")
+string qlimit = dict_get_string(q_multi, "limit")
+if quser == "alice" and qrole == "admin" and qlimit == "20":
+    passed = passed + 1
+    print("PASS: parse_query (multiple keys)")
+else:
+    print("FAIL: parse_query (multiple keys)")
+
+# Test 5: parse_request - GET request without body
+total = total + 1
+string get_http = "GET /api/v1/items?filter=active HTTP/1.1
+Host: localhost:8080
+Accept: application/json
+
+"
+
+dict req_get = parse_request(get_http)
+string m_get = dict_get_string(req_get, "method")
+string p_get = dict_get_string(req_get, "path")
+dict q_get = dict_get_dict(req_get, "query")
+string f_val = dict_get_string(q_get, "filter")
+dict h_get = dict_get_dict(req_get, "headers")
+string h_acc = dict_get_string(h_get, "Accept")
+
+bool get_ok = (m_get == "GET") and (p_get == "/api/v1/items") and (f_val == "active") and (h_acc == "application/json")
+if get_ok:
+    passed = passed + 1
+    print("PASS: parse_request (GET with query & headers)")
+else:
+    print("FAIL: parse_request (GET)")
+
+# Test 6: parse_request - POST request with payload
+total = total + 1
+string post_http = "POST /api/v1/create HTTP/1.1
+Host: localhost:8080
+Content-Type: application/json
+Content-Length: 18
+
+{\"action\":\"save\"}"
+
+dict req_post = parse_request(post_http)
+string m_post = dict_get_string(req_post, "method")
+string p_post = dict_get_string(req_post, "path")
+string b_post = dict_get_string(req_post, "body")
+dict h_post = dict_get_dict(req_post, "headers")
+string ct = dict_get_string(h_post, "Content-Type")
+
+bool post_ok = (m_post == "POST") and (p_post == "/api/v1/create") and (b_post == "{\"action\":\"save\"}") and (ct == "application/json")
+if post_ok:
+    passed = passed + 1
+    print("PASS: parse_request (POST with body)")
+else:
+    print("FAIL: parse_request (POST)")
+
+print("Result: " + string(passed) + "/" + string(total) + " tests passed.")
+if passed == total:
+    print("REQUEST MODULE: ALL TESTS PASSED!")
+else:
+    print("REQUEST MODULE: SOME TESTS FAILED!")

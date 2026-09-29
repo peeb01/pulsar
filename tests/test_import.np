@@ -1,0 +1,47 @@
+import "pulsar"
+
+print("--- [TDD Suite: Package Import & Architecture] ---")
+
+int passed = 0
+int total = 0
+
+# Test 1: Verify pulsar module imports response helpers correctly
+total = total + 1
+dict r = pulsar_ok("package import test")
+int code = dict_get_int(r, "status_code")
+string body = dict_get_string(r, "body")
+if code == 200 and body == "package import test":
+    passed = passed + 1
+    print("PASS: package entry point imports pulsar_ok")
+else:
+    print("FAIL: package entry point imports pulsar_ok")
+
+# Test 2: Define route and import server
+func pulsar_route(dict req) -> dict:
+    string p = dict_get_string(req, "path")
+    if p == "/health":
+        return pulsar_ok("healthy")
+    return pulsar_not_found("not found")
+
+import "pulsar/server"
+
+total = total + 1
+dict mock_req = {}
+dict_set_string(mock_req, "path", "/health")
+dict_set_string(mock_req, "method", "GET")
+
+dict route_res = pulsar_route(mock_req)
+int res_code = dict_get_int(route_res, "status_code")
+string res_body = dict_get_string(route_res, "body")
+
+if res_code == 200 and res_body == "healthy":
+    passed = passed + 1
+    print("PASS: route handler execution via package imports")
+else:
+    print("FAIL: route handler execution via package imports")
+
+print("Result: " + string(passed) + "/" + string(total) + " tests passed.")
+if passed == total:
+    print("IMPORT MODULE: ALL TESTS PASSED!")
+else:
+    print("IMPORT MODULE: SOME TESTS FAILED!")

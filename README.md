@@ -174,9 +174,28 @@ curl -i http://localhost:8080/greet?name=Pulsar
 
 ---
 
-## 🧪 Running Tests
+## 🧪 Running Tests (TDD Suite)
 
-A comprehensive modular test suite is provided in `tests/app_test.np`. To run it:
+Pulsar maintains a comprehensive modular TDD test suite in the `tests/` directory:
+
+| Test File | Description |
+| :--- | :--- |
+| [`tests/test_response.np`](tests/test_response.np) | Unit tests for response helpers, status codes, JSON/HTML formatting, and headers |
+| [`tests/test_request.np`](tests/test_request.np) | Unit tests for string trim, header parsing, query decoding, and raw request parsing |
+| [`tests/test_logger.np`](tests/test_logger.np) | Unit tests for digit padding, time formatting precision, and merge log capabilities |
+| [`tests/test_import.np`](tests/test_import.np) | Unit tests for package entry point resolution and server module wiring |
+| [`tests/app_test.np`](tests/app_test.np) | End-to-end integration test suite |
+
+### Run Individual Test Suites:
 ```bash
+np tests/test_response.np
+np tests/test_request.np
+np tests/test_logger.np
+np tests/test_import.np
 np tests/app_test.np
+```
+
+### Run All Tests:
+```bash
+sh tests/run_all.sh
 ```

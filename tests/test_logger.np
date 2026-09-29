@@ -1,0 +1,83 @@
+import "pulsar/core/response.np"
+
+func pulsar_route(dict req) -> dict:
+    return pulsar_ok("logger_test")
+
+import "pulsar/core/server.np"
+import regex
+
+print("--- [TDD Suite: Logger & Time Module] ---")
+
+int passed = 0
+int total = 0
+
+# Test 1: pulsar_pad3
+total = total + 1
+string p1 = pulsar_pad3(7)
+string p2 = pulsar_pad3(42)
+string p3 = pulsar_pad3(350)
+if p1 == "007" and p2 == "042" and p3 == "350":
+    passed = passed + 1
+    print("PASS: pulsar_pad3")
+else:
+    print("FAIL: pulsar_pad3 ('" + p1 + "', '" + p2 + "', '" + p3 + "')")
+
+# Test 2: pulsar_format_time default (MM:SS:MS)
+total = total + 1
+string t_default = pulsar_format_time("MM:SS:MS")
+bool t_default_valid = regex_match("^[0-9]{2}:[0-9]{2}:[0-9]{3}$", t_default)
+if t_default_valid:
+    passed = passed + 1
+    print("PASS: pulsar_format_time MM:SS:MS (" + t_default + ")")
+else:
+    print("FAIL: pulsar_format_time MM:SS:MS (" + t_default + ")")
+
+# Test 3: pulsar_format_time high precision (DD:MM:SS:MS:MicroSec)
+total = total + 1
+string t_micro = pulsar_format_time("DD:MM:SS:MS:MicroSec")
+bool t_micro_valid = regex_match("^[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{3}:[0-9]{3}$", t_micro)
+if t_micro_valid:
+    passed = passed + 1
+    print("PASS: pulsar_format_time DD:MM:SS:MS:MicroSec (" + t_micro + ")")
+else:
+    print("FAIL: pulsar_format_time DD:MM:SS:MS:MicroSec (" + t_micro + ")")
+
+# Test 4: pulsar_format_time with hours (DD:HH:MM:SS:MS:MicroSec)
+total = total + 1
+string t_hours = pulsar_format_time("DD:HH:MM:SS:MS:MicroSec")
+bool t_hours_valid = regex_match("^[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{3}:[0-9]{3}$", t_hours)
+if t_hours_valid:
+    passed = passed + 1
+    print("PASS: pulsar_format_time DD:HH:MM:SS:MS:MicroSec (" + t_hours + ")")
+else:
+    print("FAIL: pulsar_format_time DD:HH:MM:SS:MS:MicroSec (" + t_hours + ")")
+
+# Test 5: pulsar_format_time standard HH:MM:SS
+total = total + 1
+string t_std = pulsar_format_time("HH:MM:SS")
+bool t_std_valid = regex_match("^[0-9]{2}:[0-9]{2}:[0-9]{2}$", t_std)
+if t_std_valid:
+    passed = passed + 1
+    print("PASS: pulsar_format_time HH:MM:SS (" + t_std + ")")
+else:
+    print("FAIL: pulsar_format_time HH:MM:SS (" + t_std + ")")
+
+# Test 6: pulsar_with_log merge helper
+total = total + 1
+dict base_resp = pulsar_ok("ok")
+string empty_log = dict_get_string(base_resp, "log")
+
+dict logged_resp = pulsar_with_log(base_resp, "trace_id=xyz latency=4ms")
+string custom_log = dict_get_string(logged_resp, "log")
+
+if np_rt_string_len(empty_log) == 0 and custom_log == "trace_id=xyz latency=4ms":
+    passed = passed + 1
+    print("PASS: pulsar_with_log (merge log support)")
+else:
+    print("FAIL: pulsar_with_log")
+
+print("Result: " + string(passed) + "/" + string(total) + " tests passed.")
+if passed == total:
+    print("LOGGER MODULE: ALL TESTS PASSED!")
+else:
+    print("LOGGER MODULE: SOME TESTS FAILED!")

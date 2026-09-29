@@ -1,0 +1,98 @@
+import "pulsar/core/response.np"
+import regex
+
+print("--- [TDD Suite: Response Module] ---")
+
+int passed = 0
+int total = 0
+
+# Test 1: pulsar_ok
+total = total + 1
+dict r_ok = pulsar_ok("hello world")
+int code_ok = dict_get_int(r_ok, "status_code")
+string text_ok = dict_get_string(r_ok, "status_text")
+string body_ok = dict_get_string(r_ok, "body")
+if code_ok == 200 and text_ok == "OK" and body_ok == "hello world":
+    passed = passed + 1
+    print("PASS: pulsar_ok")
+else:
+    print("FAIL: pulsar_ok")
+
+# Test 2: pulsar_html
+total = total + 1
+dict r_html = pulsar_html("<h1>Title</h1>")
+string raw_html = format_response(r_html)
+bool is_html = regex_match("[\s\S]*Content-Type: text/html[\s\S]*", raw_html)
+if dict_get_int(r_html, "status_code") == 200 and is_html:
+    passed = passed + 1
+    print("PASS: pulsar_html")
+else:
+    print("FAIL: pulsar_html")
+
+# Test 3: pulsar_json
+total = total + 1
+dict json_data = {}
+dict_set_string(json_data, "name", "pulsar")
+dict_set_int(json_data, "code", 200)
+dict r_json = pulsar_json(json_data)
+string raw_json = format_response(r_json)
+bool is_json = regex_match("[\s\S]*Content-Type: application/json[\s\S]*", raw_json)
+if dict_get_int(r_json, "status_code") == 200 and is_json:
+    passed = passed + 1
+    print("PASS: pulsar_json")
+else:
+    print("FAIL: pulsar_json")
+
+# Test 4: pulsar_redirect
+total = total + 1
+dict r_redir = pulsar_redirect("https://example.com")
+string raw_redir = format_response(r_redir)
+bool is_redir = regex_match("[\s\S]*Location: https://example.com[\s\S]*", raw_redir)
+if dict_get_int(r_redir, "status_code") == 302 and is_redir:
+    passed = passed + 1
+    print("PASS: pulsar_redirect")
+else:
+    print("FAIL: pulsar_redirect")
+
+# Test 5: pulsar_no_content
+total = total + 1
+dict r_nocontent = pulsar_no_content()
+int code_nc = dict_get_int(r_nocontent, "status_code")
+string body_nc = dict_get_string(r_nocontent, "body")
+if code_nc == 204 and np_rt_string_len(body_nc) == 0:
+    passed = passed + 1
+    print("PASS: pulsar_no_content")
+else:
+    print("FAIL: pulsar_no_content - code: " + string(code_nc) + ", body_len: " + string(np_rt_string_len(body_nc)))
+
+# Test 6: Error helpers (400, 401, 403, 404, 500)
+total = total + 1
+dict r_bad = pulsar_bad_request("bad")
+dict r_unauth = pulsar_unauthorized("unauth")
+dict r_forbid = pulsar_forbidden("forbid")
+dict r_notfound = pulsar_not_found("not found")
+dict r_err = pulsar_error("internal error")
+
+bool errors_ok = (dict_get_int(r_bad, "status_code") == 400) and (dict_get_int(r_unauth, "status_code") == 401) and (dict_get_int(r_forbid, "status_code") == 403) and (dict_get_int(r_notfound, "status_code") == 404) and (dict_get_int(r_err, "status_code") == 500)
+if errors_ok:
+    passed = passed + 1
+    print("PASS: error response helpers (400, 401, 403, 404, 500)")
+else:
+    print("FAIL: error response helpers")
+
+# Test 7: format_response Content-Length calculation
+total = total + 1
+dict r_len = pulsar_ok("12345")
+string raw_len = format_response(r_len)
+bool has_len = regex_match("[\s\S]*Content-Length: 5[\s\S]*", raw_len)
+if has_len:
+    passed = passed + 1
+    print("PASS: format_response Content-Length calculation")
+else:
+    print("FAIL: format_response Content-Length calculation")
+
+print("Result: " + string(passed) + "/" + string(total) + " tests passed.")
+if passed == total:
+    print("RESPONSE MODULE: ALL TESTS PASSED!")
+else:
+    print("RESPONSE MODULE: SOME TESTS FAILED!")
