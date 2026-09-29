@@ -1,21 +1,34 @@
 import "pulsar/core/request.np"
 import "pulsar/core/response.np"
 
+fn pulsar_print_banner(int port):
+    print("┌─────────────────────────────────────────────────────────────┐")
+    print("│  ██████╗ ██╗   ██╗██╗     ███████╗ █████╗ ██████╗           │")
+    print("│  ██╔══██╗██║   ██║██║     ██╔════╝██╔══██╗██╔══██╗  PULSAR  │")
+    print("│  ██████╔╝██║   ██║██║     ███████╗███████║██████╔╝   v1.1   │")
+    print("│  ██╔═══╝ ██║   ██║██║     ╚════██║██╔══██║██╔══██╗          │")
+    print("│  ██║     ╚██████╔╝███████╗███████║██║  ██║██║  ██║          │")
+    print("│  ╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝          │")
+    print("├─────────────────────────────────────────────────────────────┤")
+    print("│  ⚡ High-Performance HTTP Engine powered by NP & LLVM        │")
+    if port == 80:
+        print("│  🌐 Local URL : http://127.0.0.1:80                          │")
+    elif port == 8080:
+        print("│  🌐 Local URL : http://127.0.0.1:8080                        │")
+    elif port == 3000:
+        print("│  🌐 Local URL : http://127.0.0.1:3000                        │")
+    else:
+        print("│  🌐 Local URL : http://127.0.0.1:" + string(port) + "                      │")
+    print("│  🚀 Status    : Ready for incoming connections              │")
+    print("│  🛑 Stop      : Press Ctrl+C to terminate server            │")
+    print("└─────────────────────────────────────────────────────────────┘")
+
 fn pulsar_serve(int port):
     int server_fd = net_listen(port)
     if server_fd < 0:
-        throw "Failed to listen on port"
+        throw "Failed to listen on port " + string(port)
 
-    string banner = "
-██████╗ ██╗   ██╗██╗     ███████╗ █████╗ ██████╗ 
-██╔══██╗██║   ██║██║     ██╔════╝██╔══██╗██╔══██╗
-██████╔╝██║   ██║██║     ███████╗███████║██████╔╝
-██╔═══╝ ██║   ██║██║     ╚════██║██╔══██║██╔══██╗
-██║     ╚██████╔╝███████╗███████║██║  ██║██║  ██║
-╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝
-"
-    print(banner)
-    print("Pulsar Server is running on port " + string(port) + "...")
+    pulsar_print_banner(port)
 
     while true:
         int client_fd = net_accept(server_fd)
@@ -23,23 +36,24 @@ fn pulsar_serve(int port):
             # Read incoming request bytes
             string raw_req = net_recv(client_fd, 8192)
             int req_len = np_rt_string_len(raw_req)
-            print("Received request length: " + string(req_len))
             
             if req_len > 0:
                 # Parse request as a dictionary
                 dict req = parse_request(raw_req)
+                string req_method = dict_get_string(req, "method")
+                string req_path = dict_get_string(req, "path")
                 
                 # Route request through user-defined routing function (which returns a response dict)
                 dict resp = pulsar_route(req)
+                int resp_code = dict_get_int(resp, "status_code")
+                string resp_text = dict_get_string(resp, "status_text")
                 
                 # Format and send response
                 string raw_resp = format_response(resp)
-                int resp_len = np_rt_string_len(raw_resp)
-                print("Formatted response length: " + string(resp_len))
+                net_send(client_fd, raw_resp)
                 
-                int bytes_sent = net_send(client_fd, raw_resp)
-                print("Bytes sent: " + string(bytes_sent))
+                # Fiber/Gin-style access logging
+                print("[PULSAR] " + string(resp_code) + " " + resp_text + " | " + req_method + " " + req_path)
             
             # Clean up connection
             net_close(client_fd)
-            print("Connection closed")
