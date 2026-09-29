@@ -1,17 +1,24 @@
 # 🌌 Pulsar HTTP Framework
 
-Pulsar is a lightweight, modular, and high-performance HTTP web framework written entirely in the **NP programming language** and compiled to native machine code via LLVM under WSL.
+Pulsar is a lightweight, modular, and high-performance HTTP web framework written entirely in the **NP programming language** and compiled to native machine code via LLVM.
 
-Inspired by Go's `net/http` and Python's micro-frameworks, Pulsar provides clean abstractions for building fast web APIs and microservices using the NP language.
+Inspired by Go's `net/http` and `Gin`/`Fiber`, Pulsar provides clean abstractions for building fast web APIs and microservices using the NP language.
 
 ---
 
 ## 🚀 Key Features
 
 * **Modular Subfolders**: Clean code organization separating request handling, response formatting, TCP servers, and utilities.
+* **Modern `func` Syntax**: Fully leverages NP's `func` keyword definition.
 * **Regex HTTP Parsing**: Fully parses raw HTTP requests to extract methods, paths, query parameters, and headers.
 * **Query Parameter Decoder**: Automatically parses query strings (e.g., `?name=Alice&age=25`) into accessible key-value dictionaries.
-* **Dynamic Content Types**: Native helpers for plain text (`pulsar_ok`), JSON (`pulsar_json`), redirects (`pulsar_redirect`), and error responses (`pulsar_not_found`, `pulsar_error`).
+* **Dynamic Content Types**: Native helpers for plain text (`pulsar_ok`, `pulsar_text`), HTML (`pulsar_html`), JSON (`pulsar_json`), redirects (`pulsar_redirect`), and error responses (`pulsar_not_found`, `pulsar_bad_request`, `pulsar_unauthorized`, `pulsar_forbidden`, `pulsar_error`).
+* **Clean Framed Startup Banner**: Elegant ASCII framed banner displaying port, local URL, and operational status.
+* **Configurable Access Logging & Time Formats**:
+  - Structured Gin/Fiber style logs: `[PULSAR] [TIME] 200 OK | GET /`
+  - Default time format: `MM:SS:MS` (e.g., `07:57:057`)
+  - Configurable precision up to: `DD:MM:SS:MS:MicroSec` (e.g., `29:07:57:057:981`)
+* **Merge Log Support**: Easily merge custom application logs into the default Pulsar access log line on a per-request basis (`pulsar_with_log`) or server-wide (`pulsar_serve_custom`).
 * **Robust Core Engine**: Pure NP socket implementation mapping connection lifecycles (accept, receive, send, and close).
 
 ---
@@ -19,8 +26,7 @@ Inspired by Go's `net/http` and Python's micro-frameworks, Pulsar provides clean
 ## 📁 Directory Structure
 
 ```text
-E:\GitHub\peeb01\pulsar\
-├── np                     # Compiler binary (WSL)
+pulsar/
 ├── app.np                 # Demo application entry point
 ├── app.out                # Compiled server executable
 ├── README.md              # Framework documentation
@@ -28,7 +34,7 @@ E:\GitHub\peeb01\pulsar\
 │   ├── core/              # Core protocol engine
 │   │   ├── request.np     # HttpRequest parser
 │   │   ├── response.np    # HttpResponse formatter and helpers
-│   │   └── server.np      # TCP listening socket server loop
+│   │   └── server.np      # TCP listening socket server loop & banner
 │   ├── utils/             # Utilities
 │   │   └── parser.np      # Regex string processing & safe dict helpers
 │   └── pulsar.np          # Framework aggregator
@@ -53,7 +59,7 @@ github.com/peeb01/pulsar main
 ### 2. Download the Package
 Run the package manager in your terminal to fetch and verify the dependency:
 ```bash
-wsl ./np get
+np get
 ```
 This automatically clones Pulsar into `.np_packages/github.com/peeb01/pulsar/`.
 
@@ -63,52 +69,85 @@ In your project files, import the package prefix and structure your code:
 ```python
 # 1. Import response & request modules with package prefix
 import "github.com/peeb01/pulsar/pulsar/core/response.np"
-import "github.com/peeb01/pulsar/github.com/peeb01/pulsar/pulsar/core/request.np"
+import "github.com/peeb01/pulsar/pulsar/core/request.np"
 
 # 2. Define the application routing function
-fn pulsar_route(dict req) -> dict:
+func pulsar_route(dict req) -> dict:
     string path = dict_get_string(req, "path")
     if path == "/":
         return pulsar_ok("Hello from Pulsar Package!")
+    elif path == "/custom":
+        dict resp = pulsar_ok("Custom response")
+        # Merge extra logs into Pulsar access log line
+        return pulsar_with_log(resp, "user_id=101 role=admin")
     return pulsar_not_found("404 Not Found")
 
 # 3. Import the server engine and start
 import "github.com/peeb01/pulsar/pulsar/core/server.np"
 
+# Default MM:SS:MS
 pulsar_serve(8080)
+
+# Or with custom time format (e.g. DD:MM:SS:MS:MicroSec)
+# pulsar_serve_with_format(8080, "DD:MM:SS:MS:MicroSec")
 ```
 
 ---
 
-## 🔧 Compiler Workarounds & Best Practices
+## ⏱️ Access Logging & Time Formats
 
-Since the current NP compiler LLVM backend has specific architectural constraints, Pulsar implements several design patterns to guarantee stability and performance:
+Pulsar produces high-visibility structured access logs for each handled HTTP request:
+```text
+[PULSAR] [07:57:057] 200 OK | GET /
+[PULSAR] [07:57:057] 200 OK | GET /json | handler=json response_bytes=15
+```
 
-1. **Dictionary-Based Objects (No Struct Codegen)**:
-   The compiler's LLVM backend does not support struct code generation. Requests and responses are represented as standard dictionaries (`dict`), which compile and run perfectly.
+### Supported Time Formats:
+- **Default (`MM:SS:MS`)**: Minutes, Seconds, Milliseconds (e.g. `07:57:057`)
+- **Full Precision (`DD:MM:SS:MS:MicroSec`)**: Day, Minutes, Seconds, Milliseconds, Microseconds (e.g. `29:07:57:057:981`)
+- **DateTime (`DD:HH:MM:SS:MS:MicroSec`)**: Day, Hours, Minutes, Seconds, Milliseconds, Microseconds
+- **Standard (`HH:MM:SS:MS`)** / **(`HH:MM:SS`)**
+
+### Merging Custom Logs:
+Attach custom diagnostics or metadata to your response in the route handler:
+```python
+dict resp = pulsar_ok("Saved")
+return pulsar_with_log(resp, "action=save user=alice latency=1ms")
+```
+Pulsar will automatically merge it at the end of the log line:
+```text
+[PULSAR] [07:57:057] 200 OK | POST /submit | action=save user=alice latency=1ms
+```
+
+---
+
+## 🔧 Compiler Best Practices
+
+1. **Dictionary-Based Objects**:
+   Requests and responses are represented as dictionaries (`dict`), which compile directly to native machine code via NP's LLVM backend.
 2. **Safe Dictionary Helpers**:
-   The compiler's dictionary literal and indexing codegen has a type-mismatch bug where it passes C++ string objects instead of C-string pointers to the runtime. We bypass this using explicit C-string casts via **Safe Dictionary Helpers** (`dict_set_string`, `dict_get_string`, etc.).
+   Safe dictionary helpers (`dict_set_string`, `dict_get_string`, etc.) guarantee memory safety and string compatibility.
 3. **No Forward References**:
-   The NP compiler requires all functions to be defined before they are called. When writing web applications, imports must be structured in a specific order:
-   - Import `request.np` and `response.np` first (defines request structures and response helpers).
+   NP requires functions to be declared before they are called:
+   - Import `request.np` and `response.np`.
    - Define the route handler function `pulsar_route`.
-   - Import `server.np` (defines the server loop which calls the route handler).
-   - Start the server using `pulsar_serve`.
+   - Import `server.np`.
+   - Start the server using `pulsar_serve` or `pulsar_serve_with_format`.
 
 ---
 
 ## 🛠️ Building and Running
 
 ### Compile the Web Application
-Compile your entry point (`app.np`) into a native binary (`app.out`) using WSL:
+Compile your entry point (`app.np`) into a native binary (`app.out`):
 ```bash
-wsl ./np build app.np
+np build app.np
 ```
 
 ### Run the Web Server
 Execute the compiled binary:
 ```bash
-wsl ./app.out
+./app.out
 ```
 
 ### Test the API
@@ -130,5 +169,5 @@ curl -i http://localhost:8080/greet?name=Pulsar
 
 A comprehensive modular test suite is provided in `tests/app_test.np`. To run it:
 ```bash
-wsl ./np tests/app_test.np
+np tests/app_test.np
 ```

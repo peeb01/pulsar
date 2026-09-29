@@ -1,12 +1,12 @@
 import regex
 
-fn pulsar_trim(string s) -> string:
+func pulsar_trim(string s) -> string:
     # Trim leading and trailing whitespace using regex
     string res = regex_replace("^[ \t\r\n]+", "", s)
     res = regex_replace("[ \t\r\n]+$", "", res)
     return res
 
-fn pulsar_split_header(string line) -> array:
+func pulsar_split_header(string line) -> array:
     # Extract header key and value
     string key = regex_replace(":[\s\S]*$", "", line)
     string val = regex_replace("^[^:]*:", "", line)
@@ -16,37 +16,37 @@ fn pulsar_split_header(string line) -> array:
 
 # --- SAFE DICTIONARY HELPERS ---
 
-fn dict_set_string(dict d, string key, string val):
+func dict_set_string(dict d, string key, string val):
     np_rt_var_set_key(d, np_rt_string_c_str(key), np_rt_var_create_string(val))
 
-fn dict_set_dict(dict d, string key, dict val):
+func dict_set_dict(dict d, string key, dict val):
     np_rt_var_set_key(d, np_rt_string_c_str(key), val)
 
-fn dict_set_array(dict d, string key, array val):
+func dict_set_array(dict d, string key, array val):
     np_rt_var_set_key(d, np_rt_string_c_str(key), val)
 
-fn dict_set_int(dict d, string key, int val):
+func dict_set_int(dict d, string key, int val):
     np_rt_var_set_key(d, np_rt_string_c_str(key), np_rt_var_create_int(val))
 
-fn dict_get_string(dict d, string key) -> string:
+func dict_get_string(dict d, string key) -> string:
     array val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
     return np_rt_to_string_var(val_ptr)
 
-fn dict_get_dict(dict d, string key) -> dict:
+func dict_get_dict(dict d, string key) -> dict:
     dict val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
     return val_ptr
 
-fn dict_get_array(dict d, string key) -> array:
+func dict_get_array(dict d, string key) -> array:
     array val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
     return val_ptr
 
-fn dict_get_int(dict d, string key) -> int:
+func dict_get_int(dict d, string key) -> int:
     array val_ptr = np_rt_var_get_key(d, np_rt_string_c_str(key))
     return np_rt_to_int_var(val_ptr)
 
 # -------------------------------
 
-fn parse_query(string query_str) -> dict:
+func parse_query(string query_str) -> dict:
     dict q = {}
     if np_rt_string_len(query_str) == 0:
         return q

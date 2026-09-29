@@ -1,7 +1,54 @@
 import "pulsar/core/request.np"
 import "pulsar/core/response.np"
+import time
+import regex
 
-fn pulsar_print_banner(int port):
+func pulsar_pad3(int n) -> string:
+    if n < 10:
+        return "00" + string(n)
+    elif n < 100:
+        return "0" + string(n)
+    return string(n)
+
+func pulsar_format_time(string fmt) -> string:
+    if np_rt_string_len(fmt) == 0:
+        fmt = "MM:SS:MS"
+
+    float now = time.now()
+    int total_secs = int(now)
+    float frac = now - float(total_secs)
+    int total_micro = int(frac * 1000000.0)
+    int ms = total_micro / 1000
+    int micro_rem = total_micro - (ms * 1000)
+
+    string str_day = time.format(now, "%d")
+    string str_hour = time.format(now, "%H")
+    string str_min = time.format(now, "%M")
+    string str_sec = time.format(now, "%S")
+    string str_ms = pulsar_pad3(ms)
+    string str_micro = pulsar_pad3(micro_rem)
+
+    if fmt == "MM:SS:MS":
+        return str_min + ":" + str_sec + ":" + str_ms
+    elif fmt == "DD:MM:SS:MS:MicroSec":
+        return str_day + ":" + str_min + ":" + str_sec + ":" + str_ms + ":" + str_micro
+    elif fmt == "DD:HH:MM:SS:MS:MicroSec":
+        return str_day + ":" + str_hour + ":" + str_min + ":" + str_sec + ":" + str_ms + ":" + str_micro
+    elif fmt == "HH:MM:SS:MS":
+        return str_hour + ":" + str_min + ":" + str_sec + ":" + str_ms
+    elif fmt == "HH:MM:SS":
+        return str_hour + ":" + str_min + ":" + str_sec
+
+    # Custom format replacement
+    string s1 = regex_replace("DD", str_day, fmt)
+    string s2 = regex_replace("HH", str_hour, s1)
+    string s3 = regex_replace("MM", str_min, s2)
+    string s4 = regex_replace("SS", str_sec, s3)
+    string s5 = regex_replace("MS", str_ms, s4)
+    string s6 = regex_replace("MicroSec", str_micro, s5)
+    return s6
+
+func pulsar_print_banner(int port):
     print("┌─────────────────────────────────────────────────────────────┐")
     print("│  ██████╗ ██╗   ██╗██╗     ███████╗ █████╗ ██████╗           │")
     print("│  ██╔══██╗██║   ██║██║     ██╔════╝██╔══██╗██╔══██╗  PULSAR  │")
@@ -10,7 +57,6 @@ fn pulsar_print_banner(int port):
     print("│  ██║     ╚██████╔╝███████╗███████║██║  ██║██║  ██║          │")
     print("│  ╚═╝      ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝          │")
     print("├─────────────────────────────────────────────────────────────┤")
-    print("│  ⚡ High-Performance HTTP Engine powered by NP & LLVM        │")
     if port == 80:
         print("│  🌐 Local URL : http://127.0.0.1:80                          │")
     elif port == 8080:
@@ -23,7 +69,7 @@ fn pulsar_print_banner(int port):
     print("│  🛑 Stop      : Press Ctrl+C to terminate server            │")
     print("└─────────────────────────────────────────────────────────────┘")
 
-fn pulsar_serve(int port):
+func pulsar_serve_custom(int port, string time_fmt, string server_extra):
     int server_fd = net_listen(port)
     if server_fd < 0:
         throw "Failed to listen on port " + string(port)
@@ -36,24 +82,42 @@ fn pulsar_serve(int port):
             # Read incoming request bytes
             string raw_req = net_recv(client_fd, 8192)
             int req_len = np_rt_string_len(raw_req)
-            
+
             if req_len > 0:
                 # Parse request as a dictionary
                 dict req = parse_request(raw_req)
                 string req_method = dict_get_string(req, "method")
                 string req_path = dict_get_string(req, "path")
-                
+
                 # Route request through user-defined routing function (which returns a response dict)
                 dict resp = pulsar_route(req)
                 int resp_code = dict_get_int(resp, "status_code")
                 string resp_text = dict_get_string(resp, "status_text")
-                
+
                 # Format and send response
                 string raw_resp = format_response(resp)
                 net_send(client_fd, raw_resp)
-                
-                # Fiber/Gin-style access logging
-                print("[PULSAR] " + string(resp_code) + " " + resp_text + " | " + req_method + " " + req_path)
-            
+
+                # Merge extra log from response and server if present
+                string time_str = pulsar_format_time(time_fmt)
+                string req_extra = dict_get_string(resp, "log")
+                string extra_part = ""
+
+                if np_rt_string_len(server_extra) > 0 and np_rt_string_len(req_extra) > 0:
+                    extra_part = " | " + server_extra + " | " + req_extra
+                elif np_rt_string_len(server_extra) > 0:
+                    extra_part = " | " + server_extra
+                elif np_rt_string_len(req_extra) > 0:
+                    extra_part = " | " + req_extra
+
+                # Gin/Fiber-style access log: [PULSAR] [TIME] CODE STATUS | METHOD PATH
+                print("[PULSAR] [" + time_str + "] " + string(resp_code) + " " + resp_text + " | " + req_method + " " + req_path + extra_part)
+
             # Clean up connection
             net_close(client_fd)
+
+func pulsar_serve(int port):
+    pulsar_serve_custom(port, "MM:SS:MS", "")
+
+func pulsar_serve_with_format(int port, string time_fmt):
+    pulsar_serve_custom(port, time_fmt, "")

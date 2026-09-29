@@ -1,7 +1,7 @@
 import "pulsar/utils/parser.np"
 import regex
 
-fn parse_request(string raw_req) -> dict:
+func parse_request(string raw_req) -> dict:
     string remaining = raw_req
     # Extract first line (request line)
     string first_line = regex_replace("\r?\n[\s\S]*$", "", remaining)

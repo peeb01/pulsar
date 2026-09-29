@@ -1,7 +1,7 @@
 import "pulsar/utils/parser.np"
 import regex
 
-fn pulsar_init() -> dict:
+func pulsar_init() -> dict:
     dict p = {}
 
     # Set HTTP Methods
@@ -85,7 +85,7 @@ fn pulsar_init() -> dict:
 
 dict pulsar = pulsar_init()
 
-fn pulsar_status_text(int code) -> string:
+func pulsar_status_text(int code) -> string:
     if code == 100:
         return "Continue"
     elif code == 101:
@@ -139,69 +139,74 @@ fn pulsar_status_text(int code) -> string:
     else:
         return "Unknown Status"
 
-fn pulsar_response(int status_code, string status_text, array headers, string body) -> dict:
+func pulsar_response(int status_code, string status_text, array headers, string body) -> dict:
     dict resp = {}
     dict_set_int(resp, "status_code", status_code)
     dict_set_string(resp, "status_text", status_text)
     dict_set_array(resp, "headers", headers)
     dict_set_string(resp, "body", body)
+    dict_set_string(resp, "log", "")
     return resp
 
-fn pulsar_ok(string body) -> dict:
+func pulsar_with_log(dict resp, string log_msg) -> dict:
+    dict_set_string(resp, "log", log_msg)
+    return resp
+
+func pulsar_ok(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(200, "OK", h, body)
 
-fn pulsar_text(string body) -> dict:
+func pulsar_text(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(200, "OK", h, body)
 
-fn pulsar_html(string html_body) -> dict:
+func pulsar_html(string html_body) -> dict:
     array h = ["Content-Type: text/html; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(200, "OK", h, html_body)
 
-fn pulsar_json(dict data) -> dict:
+func pulsar_json(dict data) -> dict:
     array h = ["Content-Type: application/json; charset=utf-8", "Server: Pulsar"]
     string body = json_stringify(data)
     return pulsar_response(200, "OK", h, body)
 
-fn pulsar_redirect(string url) -> dict:
+func pulsar_redirect(string url) -> dict:
     array h = ["Location: " + url, "Server: Pulsar"]
     return pulsar_response(302, "Found", h, "")
 
-fn pulsar_no_content() -> dict:
+func pulsar_no_content() -> dict:
     array h = ["Server: Pulsar"]
     return pulsar_response(204, "No Content", h, "")
 
-fn pulsar_bad_request(string body) -> dict:
+func pulsar_bad_request(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(400, "Bad Request", h, body)
 
-fn pulsar_unauthorized(string body) -> dict:
+func pulsar_unauthorized(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(401, "Unauthorized", h, body)
 
-fn pulsar_forbidden(string body) -> dict:
+func pulsar_forbidden(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(403, "Forbidden", h, body)
 
-fn pulsar_not_found(string body) -> dict:
+func pulsar_not_found(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(404, "Not Found", h, body)
 
-fn pulsar_error(string body) -> dict:
+func pulsar_error(string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(500, "Internal Server Error", h, body)
 
-fn pulsar_status_response(int status_code, string body) -> dict:
+func pulsar_status_response(int status_code, string body) -> dict:
     array h = ["Content-Type: text/plain; charset=utf-8", "Server: Pulsar"]
     return pulsar_response(status_code, pulsar_status_text(status_code), h, body)
 
-fn pulsar_status_json(int status_code, dict data) -> dict:
+func pulsar_status_json(int status_code, dict data) -> dict:
     array h = ["Content-Type: application/json; charset=utf-8", "Server: Pulsar"]
     string body = json_stringify(data)
     return pulsar_response(status_code, pulsar_status_text(status_code), h, body)
 
-fn format_response(dict resp) -> string:
+func format_response(dict resp) -> string:
     int status_code = dict_get_int(resp, "status_code")
     string status_text = dict_get_string(resp, "status_text")
     

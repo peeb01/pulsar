@@ -1,5 +1,9 @@
 import "pulsar/core/response.np"
 import "pulsar/core/request.np"
+func pulsar_route(dict req) -> dict:
+    return pulsar_ok("mock")
+
+import "pulsar/core/server.np"
 
 print("=== Running Pulsar Framework Tests ===")
 
@@ -108,7 +112,36 @@ if helper_ok:
 else:
     print("Status helper test: false")
 
-if trim_ok and header_ok and query_ok and req_ok and resp_ok and constants_ok and helper_ok:
+# Test 7: Time format helper (MM:SS:MS and DD:MM:SS:MS:MicroSec)
+string t_default = pulsar_format_time("MM:SS:MS")
+string t_full = pulsar_format_time("DD:MM:SS:MS:MicroSec")
+print("Time Default (MM:SS:MS)       : " + t_default)
+print("Time Full (DD:MM:SS:MS:Micro) : " + t_full)
+
+bool t_default_ok = regex_match("^[0-9]{2}:[0-9]{2}:[0-9]{3}$", t_default)
+bool t_full_ok = regex_match("^[0-9]{2}:[0-9]{2}:[0-9]{2}:[0-9]{3}:[0-9]{3}$", t_full)
+if t_default_ok:
+    print("Time default format regex ok : true")
+else:
+    print("Time default format regex ok : false")
+
+if t_full_ok:
+    print("Time full format regex ok    : true")
+else:
+    print("Time full format regex ok    : false")
+
+# Test 8: Merge log support with pulsar_with_log
+dict logged_resp = pulsar_ok("hello with log")
+logged_resp = pulsar_with_log(logged_resp, "latency=2ms user=alice")
+string extra_log = dict_get_string(logged_resp, "log")
+print("Extra log attached: " + extra_log)
+bool log_ok = (extra_log == "latency=2ms user=alice")
+if log_ok:
+    print("Extra log test: true")
+else:
+    print("Extra log test: false")
+
+if trim_ok and header_ok and query_ok and req_ok and resp_ok and constants_ok and helper_ok and t_default_ok and t_full_ok and log_ok:
     print("ALL TESTS PASSED SUCCESSFULLY!")
 else:
     print("SOME TESTS FAILED!")

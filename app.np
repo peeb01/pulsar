@@ -1,7 +1,7 @@
 import "pulsar/core/response.np"
 import "pulsar/core/request.np"
 
-fn pulsar_route(dict req) -> dict:
+func pulsar_route(dict req) -> dict:
     dict pulsar = pulsar_init()
     
     # Cast constants to local typed variables
@@ -25,10 +25,12 @@ fn pulsar_route(dict req) -> dict:
         dict_set_string(response_data, "framework", "Pulsar")
         dict_set_string(response_data, "language", "NP")
         dict_set_string(response_data, "message", "Hello from modular framework!")
-        return pulsar_json(response_data)
+        dict resp = pulsar_json(response_data)
+        return pulsar_with_log(resp, "handler=json response_bytes=15")
     elif method == method_post and path == "/submit":
         string body = dict_get_string(req, "body")
-        return pulsar_status_response(status_created, "Submitted successfully: " + body)
+        dict resp = pulsar_status_response(status_created, "Submitted successfully: " + body)
+        return pulsar_with_log(resp, "action=create payload_len=" + string(np_rt_string_len(body)))
     elif method == method_put and path == "/update":
         string body = dict_get_string(req, "body")
         return pulsar_status_response(status_ok, "Updated successfully: " + body)
@@ -40,10 +42,13 @@ fn pulsar_route(dict req) -> dict:
         string name_param = dict_get_string(q, "name")
         if np_rt_string_len(name_param) > 0:
             name = name_param
-        return pulsar_ok("Hello, " + name + "!")
+        dict resp = pulsar_ok("Hello, " + name + "!")
+        return pulsar_with_log(resp, "user=" + name)
     else:
         return pulsar_status_response(status_not_found, "Page Not Found")
 
 import "pulsar/core/server.np"
 
+# Start server with default time format (MM:SS:MS)
+# Or use pulsar_serve_with_format(8080, "DD:MM:SS:MS:MicroSec")
 pulsar_serve(8080)
