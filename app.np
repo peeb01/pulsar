@@ -1,18 +1,17 @@
-import "pulsar/core/response.np"
-import "pulsar/core/request.np"
+import "pulsar"
 
 func pulsar_route(dict req) -> dict:
-    dict pulsar = pulsar_init()
+    dict p = pulsar_init()
     
     # Cast constants to local typed variables
-    string method_get = string(pulsar.MethodGet)
-    string method_post = string(pulsar.MethodPost)
-    string method_put = string(pulsar.MethodPut)
-    string method_delete = string(pulsar.MethodDelete)
+    string method_get = string(p.MethodGet)
+    string method_post = string(p.MethodPost)
+    string method_put = string(p.MethodPut)
+    string method_delete = string(p.MethodDelete)
     
-    int status_ok = int(pulsar.StatusOK)
-    int status_created = int(pulsar.StatusCreated)
-    int status_not_found = int(pulsar.StatusNotFound)
+    int status_ok = int(p.StatusOK)
+    int status_created = int(p.StatusCreated)
+    int status_not_found = int(p.StatusNotFound)
     
     string path = dict_get_string(req, "path")
     string method = dict_get_string(req, "method")
@@ -47,7 +46,7 @@ func pulsar_route(dict req) -> dict:
     else:
         return pulsar_status_response(status_not_found, "Page Not Found")
 
-import "pulsar/core/server.np"
+import "pulsar/server"
 
 # Start server with default time format (MM:SS:MS)
 # Or use pulsar_serve_with_format(8080, "DD:MM:SS:MS:MicroSec")

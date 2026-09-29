@@ -64,14 +64,13 @@ np get
 This automatically clones Pulsar into `.np_packages/github.com/peeb01/pulsar/`.
 
 ### 3. Import and Use in Your Code
-In your project files, import the package prefix and structure your code:
+In your project files, import Pulsar directly using NP's package entry point resolution:
 
 ```python
-# 1. Import response & request modules with package prefix
-import "github.com/peeb01/pulsar/pulsar/core/response.np"
-import "github.com/peeb01/pulsar/pulsar/core/request.np"
+# 1. Import Pulsar HTTP framework (loads request & response helpers)
+import "pulsar"
 
-# 2. Define the application routing function
+# 2. Define your application routing function
 func pulsar_route(dict req) -> dict:
     string path = dict_get_string(req, "path")
     if path == "/":
@@ -82,14 +81,24 @@ func pulsar_route(dict req) -> dict:
         return pulsar_with_log(resp, "user_id=101 role=admin")
     return pulsar_not_found("404 Not Found")
 
-# 3. Import the server engine and start
-import "github.com/peeb01/pulsar/pulsar/core/server.np"
+# 3. Import server engine and start
+import "pulsar/server"
 
-# Default MM:SS:MS
+# Start server with default time format (MM:SS:MS)
 pulsar_serve(8080)
 
 # Or with custom time format (e.g. DD:MM:SS:MS:MicroSec)
 # pulsar_serve_with_format(8080, "DD:MM:SS:MS:MicroSec")
+```
+
+#### Alternative: Go-Style Grouped Imports or Remote Package Path
+NP also supports Go-style grouped imports and remote paths:
+```python
+import (
+    "pulsar"
+)
+# or direct remote import:
+# import "github.com/peeb01/pulsar"
 ```
 
 ---
